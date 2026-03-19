@@ -155,3 +155,32 @@ def submit(request, course_id):
         
         # 5. Redirect to the exam results page
         return redirect('onlinecourse:show_exam_result', course_id=course.id, submission_id=submission.id)
+
+def show_exam_result(request, course_id, submission_id):
+    course = get_object_or_404(Course, pk=course_id)
+    submission = get_object_or_404(Submission, pk=submission_id)
+    
+    # Get the list of choice IDs the user selected
+    selected_ids = [choice.id for choice in submission.choices.all()]
+    
+    # Calculate the score
+    correct_answers = 0
+    total_questions = course.question_set.count()
+    
+    for question in course.question_set.all():
+        if question.is_get_score(selected_ids):
+            correct_answers += 1
+            
+    # Calculate the final grade percentage
+    if total_questions > 0:
+        grade = int((correct_answers / total_questions) * 100)
+    else:
+        grade = 0
+        
+    context = {
+        'course': course,
+        'grade': grade,
+        'choices': submission.choices.all(),
+    }
+    
+    return render(request, 'onlinecourse/exam_result_bootstrap.html', context)
