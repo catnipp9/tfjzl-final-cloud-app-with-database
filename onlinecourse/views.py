@@ -1,3 +1,4 @@
+from .models import Course, Lesson, Instructor, Learner, Question, Choice, Submission, Enrollment
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
 # <HINT> Import any new Models here
@@ -132,5 +133,25 @@ def extract_answers(request):
         # Calculate the total score
 #def show_exam_result(request, course_id, submission_id):
 
-
-
+def submit(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
+    
+    if request.method == 'POST':
+        # 1. Get the user's enrollment
+        enrollment = Enrollment.objects.get(user=request.user, course=course)
+        
+        # 2. Create a new submission object
+        submission = Submission.objects.create(enrollment=enrollment)
+        
+        # 3. Collect choices from the POST request
+        for key, value in request.POST.items():
+            if key.startswith('choice_'):
+                choice_id = int(value)
+                choice = Choice.objects.get(pk=choice_id)
+                # 4. Add the selected choice to the submission
+                submission.choices.add(choice)
+        
+        submission.save()
+        
+        # 5. Redirect to the exam results page
+        return redirect('onlinecourse:show_exam_result', course_id=course.id, submission_id=submission.id)
